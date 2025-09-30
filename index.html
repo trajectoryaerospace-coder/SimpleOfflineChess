@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Offline Chess Board</title>
+<style>
+  #timerBtn, #changeTimerBtn {
+  background-color: #2b6cb0;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+#timerBtn:hover, #changeTimerBtn:hover {
+  transform: scale(1.1);      /* slightly bigger */
+  background-color: #1e4a8b;  /* darker shade */
+}
+
+  #bgColorBtn:hover {
+  transform: scale(1.1); /* slightly bigger on hover */
+  background-color: #1e4a8b; /* optional darker shade on hover */
+}
+#timerPopup button {
+  background: #2b6cb0;
+  border: none;
+  border-radius: 5px;
+  color: white;
+  padding: 5px 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+#timerPopup button:hover {
+  background: #1e4a8b;
+}
+
+.digitalClock {
+  font-family: 'Courier New', Courier, monospace; /* you can also import 'Digital-7' font */
+  font-size: 40px;
+  color: #0f0; /* bright green */
+  background-color: rgba(0,0,0,0.8);
+  padding: 10px 20px;
+  border-radius: 8px;
+  text-shadow:
+     0 0 2px rgb(0, 110, 255),
+     0 0 5px rgb(0, 110, 255),
+     0 0 10px rgb(0, 110, 255),
+     0 0 20px rgb(0, 110, 255);
+  letter-spacing: 4px; /* spreads digits like 7-segment */
+  border: 2px solid #0f0;
+  box-shadow: 0 0 10px #0f0 inset, 0 0 20px #0f0;
+}
+
+.digitalClock {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 36px;
+  text-align: center;
+  padding: 10px 0;
+  border: 5px solid #0d1d2d;
+  border-radius: 8px;
+  background-color: rgba(0,0,0,0.7);
+  color: #00f2ff; /* bright digital green */
+  box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+}
+
+#sideBox {
+  display: flex;
+  justify-content: center; /* centers button horizontally */
+  align-items: flex-start;
+  padding-top: 10px;
+  position: absolute;
+  top: 10px;
+  left: 20px;
+  width: 300px;
+  height: calc(100vh - 20px);
+  background-color: rgba(0,0,0,0.6);
+  border-radius: 8px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+}
+#clocks {
+  display: flex;
+  flex-direction: column; /* vertical stack */
+  align-items: center;    /* center horizontally */
+  gap: 20px;
+  margin-top: 20px;
+}
+
+
+#bgColorPicker {
+  width: 150px;  /* optional size */
+  height: 150px; /* optional size */
+  border-radius: 50%; /* makes it circular if browser supports it */
+}
+
+#bgColorBtn {
+  margin-top: 30px;   /* pushes it 30px down inside sideBox */
+  margin-left: 14px;  /* optional: move it away from left edge */
+  padding: 20px 57px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  background-color: #2b6cb0;
+  color: white;
+  font-size: px;
+}
+
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  min-height: 100vh;
+  background-color: #4a4a4a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+#board-wrapper { display: flex; justify-content: center; align-items: center; }
+#board {
+  display: grid;
+  grid-template-columns: repeat(8, 48px);
+  grid-template-rows: repeat(8, 48px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+  transition: transform 0.4s;
+  transform-origin: center center;
+}
+.square {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 36px;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: transform 0.1s;
+}
+.light { background-color: #f0d9b5; }
+.dark { background-color: #b58863; }
+.square .piece:hover { transform: scale(1.2); }
+.dot {
+  width: 10px;
+  height: 10px;
+  background-color: rgba(0,0,0,0.7);
+  border-radius: 50%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 6px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.in-check { box-shadow: inset 0 0 0 3px red; border-radius: 4px; }
+
+#controls {
+  position: absolute;
+  top: 50px;
+  right: 15px;
+  font-size: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+  align-items: flex-start;
+  background-color: rgba(0,0,0,0.7);
+  padding: 15px;
+  border-radius: 12px;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+input[type=range] { width: 200px; }
+button {
+  padding: 5px 10px;
+  cursor: pointer;
+  background-color: #2b6cb0;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 14px;
+}
+label { cursor: pointer; }
+#status { font-size: 18px; text-shadow: 1px 1px 2px #000; }
+
+#moveHistoryBox {
+  width: 220px;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: rgba(0,0,0,0.5);
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+
+/* Pawn promotion popup */
+#promotionPopup {
+  display: none;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: #2b6cb0;
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+  z-index: 10;
+}
+#promotionPopup div {
+  display: flex;
+  gap: 10px;
+}
+.promotionPiece {
+  font-size: 48px;
+  cursor: pointer;
+  padding: 5px;
+  background-color: #f0d9b5;
+  border-radius: 8px;
+  transition: transform 0.2s;
+}
+.promotionPiece:hover { transform: scale(1.2); background-color: #e6cfa8; }
+</style>
+</head>
+<body>
+<div id="board-wrapper">
+  <div id="board-container">
+    <div id="board"></div>
+  </div>
+</div>
+
+<div id="controls">
+  <div id="status">White to move</div>
+  <div>
+    <label>Board Scale: <input type="range" id="scaleSlider" min="1" max="1.4" step="0.01" value="1.4"></label>
+  </div>
+  <button id="flipButton">Flip Board</button>
+  <div>
+    <label><input type="checkbox" id="autoFlip"> Auto-flip after move</label>
+  </div>
+  <div>
+    <label><input type="checkbox" id="noTransition"> Remove transition</label>
+  </div>
+
+  <!-- Move History Box -->
+  <div id="moveHistoryBox"></div>
+
+  <div style="display:flex; gap:5px;">
+    <button id="undoButton">Undo</button>
+    <button id="resetButton">Reset</button>
+  </div>
+</div>
+
+<!-- Promotion Popup -->
+<div id="promotionPopup">
+  <div>
+    <div class="promotionPiece" data-piece="Q">♕</div>
+    <div class="promotionPiece" data-piece="R">♖</div>
+    <div class="promotionPiece" data-piece="B">♗</div>
+    <div class="promotionPiece" data-piece="N">♘</div>
+  </div>
+</div>
+
+<script>
+// Chess pieces
+const PIECES = { 'wK':'♔','wQ':'♕','wR':'♖','wB':'♗','wN':'♘','wP':'♙',
+                 'bK':'♚','bQ':'♛','bR':'♜','bB':'♝','bN':'♞','bP':'♟'};
+
+// Initial board
+const initialBoard = [
+  ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+  ['bP','bP','bP','bP','bP','bP','bP','bP'],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['','','','','','','',''],
+  ['wP','wP','wP','wP','wP','wP','wP','wP'],
+  ['wR','wN','wB','wQ','wK','wB','wN','wR']
+];
+
+let board = JSON.parse(JSON.stringify(initialBoard));
+let moveHistory = [];
+let selected = null;
+let possibleMoves = [];
+let turn = 'w';
+let flipped = false;
+let castlingRights = { wK:true, wQ:true, bK:true, bQ:true };
+
+const boardEl = document.getElementById('board');
+const statusEl = document.getElementById('status');
+const slider = document.getElementById('scaleSlider');
+const flipButton = document.getElementById('flipButton');
+const autoFlipCheckbox = document.getElementById('autoFlip');
+const noTransitionCheckbox = document.getElementById('noTransition');
+const moveHistoryBox = document.getElementById('moveHistoryBox');
+const undoButton = document.getElementById('undoButton');
+const resetButton = document.getElementById('resetButton');
+const promotionPopup = document.getElementById('promotionPopup');
+let promotionResolve = null;
+
+function drawBoard(){
+  boardEl.innerHTML='';
+  const kingPos = findKing(turn);
+  for(let r=0;r<8;r++){
+    for(let c=0;c<8;c++){
+      const displayRow = flipped?7-r:r;
+      const displayCol = flipped?7-c:c;
+      const square = document.createElement('div');
+      square.classList.add('square',(displayRow+displayCol)%2===0?'light':'dark');
+      square.dataset.row=r;
+      square.dataset.col=c;
+
+      const piece = board[r][c];
+      if(piece){
+        const pieceWrapper=document.createElement('div');
+        pieceWrapper.style.transform=flipped?'rotate(180deg)':'';
+        const pieceEl=document.createElement('div');
+        pieceEl.classList.add('piece');
+        pieceEl.textContent=PIECES[piece];
+        pieceEl.draggable=true;
+        pieceEl.style.cursor='grab';
+        pieceEl.addEventListener('dragstart',e=>{
+          if(piece[0]!==turn) e.preventDefault();
+          else selected={r,c};
+        });
+        pieceWrapper.appendChild(pieceEl);
+        square.appendChild(pieceWrapper);
+      }
+
+      if(possibleMoves.some(m=>m[0]===r && m[1]===c)){
+        const dot=document.createElement('div');
+        dot.classList.add('dot');
+        square.appendChild(dot);
+      }
+
+      if(piece===turn+'K' && isSquareAttacked(r,c,turn==='w'?'b':'w')){
+        square.classList.add('in-check');
+      }
+
+      square.addEventListener('click',()=>onSquareClick(r,c));
+      square.addEventListener('dragover',e=>e.preventDefault());
+      square.addEventListener('drop',e=>{
+        if(selected && possibleMoves.some(m=>m[0]===r && m[1]===c)){
+          makeMove(r,c);
+        }
+      });
+
+      boardEl.appendChild(square);
+    }
+  }
+  updateStatus();
+  updateMoveHistory();
+}
+
+function onSquareClick(r,c){
+  const piece=board[r][c];
+  if(selected && possibleMoves.some(m=>m[0]===r && m[1]===c)){
+    makeMove(r,c);
+  } else if(piece && piece[0]===turn){
+    selected={r,c};
+    possibleMoves=filterLegalMoves(calculateMoves(piece,r,c),r,c);
+    drawBoard();
+  } else {
+    selected=null;
+    possibleMoves=[];
+    drawBoard();
+    startClock();
+  }
+}
+
+function makeMove(r,c){
+  const piece = board[selected.r][selected.c];
+  const from=[selected.r,selected.c];
+  const to=[r,c];
+  let moveNotation='';
+
+  // Castling check
+  if(piece[1]==='K' && Math.abs(c-selected.c)===2){
+    if(c>selected.c){ board[r][5]=board[r][7]; board[r][7]=''; moveNotation='O-O'; }
+    else { board[r][3]=board[r][0]; board[r][0]=''; moveNotation='O-O-O'; }
+  } else {
+    const target = board[r][c];
+    if(target) moveNotation = piece[1]+ 'x' + String.fromCharCode(97+c)+(8-r);
+    else moveNotation = piece[1] + String.fromCharCode(97+c)+(8-r);
+  }
+
+  board[r][c]=board[selected.r][selected.c];
+  board[selected.r][selected.c]='';
+
+  // Pawn promotion check
+  if(piece[1]==='P' && (r===0 || r===7)){
+    showPromotion(piece[0]).then(promotedPiece=>{
+      board[r][c] = piece[0]+promotedPiece;
+      moveNotation = moveNotation.replace('P', '') + '=' + promotedPiece;
+      finalizeMove();
+    });
+    return; // wait for promotion choice
+  }
+
+  finalizeMove();
+
+  function finalizeMove(){
+    // Update castling rights
+    if(piece==='wK') castlingRights.wK=false, castlingRights.wQ=false;
+    if(piece==='bK') castlingRights.bK=false, castlingRights.bQ=false;
+    if(piece==='wR' && selected.r===7 && selected.c===0) castlingRights.wQ=false;
+    if(piece==='wR' && selected.r===7 && selected.c===7) castlingRights.wK=false;
+    if(piece==='bR' && selected.r===0 && selected.c===0) castlingRights.bQ=false;
+    if(piece==='bR' && selected.r===0 && selected.c===7) castlingRights.bK=false;
+
+    moveHistory.push({
+      from, to, piece, captured:board[r][c], castling:JSON.parse(JSON.stringify(castlingRights)),
+      board: JSON.parse(JSON.stringify(board)),
+      notation: moveNotation
+    });
+
+    turn=turn==='w'?'b':'w';
+    selected=null;
+    possibleMoves=[];
+    if(autoFlipCheckbox.checked) flipped=!flipped;
+    updateBoardTransform();
+    drawBoard();
+  }
+}
+
+// Show promotion popup and return promise
+function showPromotion(color){
+  return new Promise(resolve=>{
+    promotionPopup.style.display='block';
+    promotionResolve = resolve;
+    const pieces = promotionPopup.querySelectorAll('.promotionPiece');
+    pieces.forEach(p=>{
+      p.onclick = ()=>{
+        promotionPopup.style.display='none';
+        resolve(p.dataset.piece);
+      };
+      p.textContent = PIECES[color+p.dataset.piece];
+    });
+  });
+}
+
+function updateMoveHistory(){
+  moveHistoryBox.innerHTML='';
+  moveHistory.forEach((m,i)=>{
+    const div=document.createElement('div');
+    div.textContent=`${i+1}. ${m.notation}`;
+    moveHistoryBox.appendChild(div);
+  });
+  moveHistoryBox.scrollTop = moveHistoryBox.scrollHeight;
+}
+
+undoButton.addEventListener('click',()=>{
+  if(moveHistory.length===0) return;
+  moveHistory.pop();
+  if(moveHistory.length===0){
+    board = JSON.parse(JSON.stringify(initialBoard));
+    castlingRights={ wK:true, wQ:true, bK:true, bQ:true };
+    turn='w';
+  } else {
+    const last = moveHistory[moveHistory.length-1];
+    board = JSON.parse(JSON.stringify(last.board));
+    castlingRights = JSON.parse(JSON.stringify(last.castling));
+    turn = last.piece[0]==='w'?'b':'w';
+  }
+  selected=null;
+  possibleMoves=[];
+  drawBoard();
+});
+
+resetButton.addEventListener('click',()=>{
+  board = JSON.parse(JSON.stringify(initialBoard));
+  moveHistory = [];
+  turn='w';
+  castlingRights={ wK:true, wQ:true, bK:true, bQ:true };
+  selected=null;
+  possibleMoves=[];
+  flipped=false;
+  updateBoardTransform();
+  drawBoard();
+});
+
+slider.addEventListener('input',updateBoardTransform);
+flipButton.addEventListener('click',()=>{flipped=!flipped;updateBoardTransform();drawBoard();});
+noTransitionCheckbox.addEventListener('change',updateBoardTransform);
+
+function updateBoardTransform(){
+  boardEl.style.transition=noTransitionCheckbox.checked?'none':'transform 0.4s';
+  boardEl.style.transform=`scale(${slider.value}) ${flipped?'rotate(180deg)':''}`;
+}
+
+// --- Chess logic functions ---
+function findKing(color){
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++) if(board[r][c]===color+'K') return [r,c];
+}
+
+function isSquareAttacked(r,c,attacker){
+  for(let i=0;i<8;i++) for(let j=0;j<8;j++){
+    const p=board[i][j];
+    if(p && p[0]===attacker){
+      const moves=calculateMoves(p,i,j);
+      if(moves.some(m=>m[0]===r && m[1]===c)) return true;
+    }
+  }
+  return false;
+}
+
+function allLegalMoves(color){
+  const moves=[];
+  for(let r=0;r<8;r++) for(let c=0;c<8;c++){
+    const p=board[r][c];
+    if(p && p[0]===color){
+      const ms=filterLegalMoves(calculateMoves(p,r,c),r,c);
+      ms.forEach(m=>moves.push({from:[r,c],to:m}));
+    }
+  }
+  return moves;
+}
+
+function filterLegalMoves(moves,r,c){
+  return moves.filter(m=>isMoveLegal(r,c,m[0],m[1]));
+}
+
+function isMoveLegal(fromR,fromC,toR,toC){
+  const piece=board[fromR][fromC];
+  const target=board[toR][toC];
+  board[toR][toC]=piece; board[fromR][fromC]='';
+  const kingPos=findKing(piece[0]);
+  const inCheck=isSquareAttacked(kingPos[0],kingPos[1],piece[0]==='w'?'b':'w');
+  board[fromR][fromC]=piece; board[toR][toC]=target;
+  return !inCheck;
+}
+
+function calculateMoves(piece,r,c){
+  const moves=[]; const dir=piece[0]==='w'? -1:1;
+  switch(piece[1]){
+    case 'P':
+      if(r+dir>=0 && r+dir<8 && !board[r+dir][c]) moves.push([r+dir,c]);
+      if((r===6 && piece[0]==='w') || (r===1 && piece[0]==='b')) if(!board[r+dir][c] && !board[r+2*dir][c]) moves.push([r+2*dir,c]);
+      [[-1,dir],[1,dir]].forEach(([dc,dr])=>{const nc=c+dc,nr=r+dr;if(nr>=0 && nr<8 && nc>=0 && nc<8 && board[nr][nc] && board[nr][nc][0]!==piece[0]) moves.push([nr,nc]);});
+      break;
+    case 'R': moves.push(...lineMoves(r,c,[[1,0],[-1,0],[0,1],[0,-1]],piece[0])); break;
+    case 'B': moves.push(...lineMoves(r,c,[[1,1],[1,-1],[-1,1],[-1,-1]],piece[0])); break;
+    case 'Q': moves.push(...lineMoves(r,c,[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]],piece[0])); break;
+    case 'K':
+      for(let dr=-1;dr<=1;dr++) for(let dc=-1;dc<=1;dc++) if(dr!==0||dc!==0){const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&(!board[nr][nc]||board[nr][nc][0]!==piece[0])) moves.push([nr,nc]);}
+      if(piece[0]==='w'){
+        if(castlingRights.wK && !board[7][5] && !board[7][6] && !isSquareAttacked(7,4,'b') && !isSquareAttacked(7,5,'b') && !isSquareAttacked(7,6,'b')) moves.push([7,6]);
+        if(castlingRights.wQ && !board[7][3] && !board[7][2] && !board[7][1] && !isSquareAttacked(7,2,'b') && !isSquareAttacked(7,3,'b') && !isSquareAttacked(7,4,'b')) moves.push([7,2]);
+      } else{
+        if(castlingRights.bK && !board[0][5] && !board[0][6] && !isSquareAttacked(0,4,'w') && !isSquareAttacked(0,5,'w') && !isSquareAttacked(0,6,'w')) moves.push([0,6]);
+        if(castlingRights.bQ && !board[0][3] && !board[0][2] && !board[0][1] && !isSquareAttacked(0,2,'w') && !isSquareAttacked(0,3,'w') && !isSquareAttacked(0,4,'w')) moves.push([0,2]);
+      }
+      break;
+    case 'N': [[2,1],[1,2],[2,-1],[1,-2],[-2,1],[-1,2],[-2,-1],[-1,-2]].forEach(([dr,dc])=>{const nr=r+dr,nc=c+dc;if(nr>=0&&nr<8&&nc>=0&&nc<8&&(!board[nr][nc]||board[nr][nc][0]!==piece[0])) moves.push([nr,nc]);}); break;
+  }
+  return moves;
+}
+
+function lineMoves(r,c,directions,color){
+  const moves=[];
+  for(const [dr,dc] of directions){
+    let nr=r+dr,nc=c+dc;
+    while(nr>=0&&nr<8&&nc>=0&&nc<8){
+      if(!board[nr][nc]) moves.push([nr,nc]);
+      else { if(board[nr][nc][0]!==color) moves.push([nr,nc]); break; }
+      nr+=dr; nc+=dc;
+    }
+  }
+  return moves;
+}
+
+function updateStatus(){
+  statusEl.textContent=turn==='w'?'White to move':'Black to move';
+}
+
+drawBoard();
+updateBoardTransform();
+
+startClock(); // starts the correct clock for the next player
+
+</script>
+
+<div id="sideBox" style="display:flex; flex-direction:column; align-items:center; gap:20px; padding-top:30px;">
+  <div id="tweaksText" style="margin-top:20px; cursor:pointer; font-weight:bold; color:white; font-size:40px;">
+  SETTINGS
+</div>
+<div id="tweaksPopup" style="
+    display:none;
+    position: fixed;
+    top:20%;
+    left:50%;
+    transform: translate(-50%, -50%);
+    background-color: #2b6cb0;
+    color: white;
+    padding: 20px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+    z-index: 20;
+    text-align:center;
+">
+  <div id="tweaksPopupContent">
+    <!-- Put your custom text here -->
+    This Site was made by Ayushman Kalita, Y11 Gems Founders Al Mizhar, as of 30/09/2025. 
+  </div>
+  <button id="closeTweaksBtn" style="
+      margin-top: 15px;
+      padding: 5px 10px;
+      background-color:#1e4a8b;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+  ">Close</button>
+</div>
+
+  <button id="bgColorBtn">Background Color</button>
+  <input type="color" id="bgColorPicker" style="display:none;">
+  
+  <!-- Timer Button -->
+<div style="display:flex; flex-direction:column; gap:10px; align-items:center;">
+  <button id="timerBtn">Start Timer</button>
+  <button id="changeTimerBtn">Change Timer</button>
+</div>
+
+<!-- Timer Selection Popup -->
+<div id="timerPopup" style="display:none; position:absolute; background:#222; color:#fff; padding:15px; border-radius:8px; box-shadow:0 4px 10px rgba(0,0,0,0.5); z-index:20;">
+  <div style="display:flex; flex-direction:column; gap:10px;">
+    <button class="timerOption" data-time="60">1 Minute</button>
+    <button class="timerOption" data-time="180">3 Minutes</button>
+    <button class="timerOption" data-time="300">5 Minutes</button>
+    <button class="timerOption" data-time="600">10 Minutes</button>
+    <button class="timerOption" data-time="900">15 Minutes</button>
+  </div>
+</div>
+
+  <!-- Two Digital Clocks -->
+<div id="clocks" style="display:flex; flex-direction:column; gap:20px; margin-top:20px;">
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="color:rgb(101, 95, 95); font-weight:bold;">B</span>
+    <div class="digitalClock" id="clock1">00:00:00</div>
+    <span style="color:rgb(146, 146, 138); font-weight:bold;">B</span> <!-- NEW text on the right -->
+  </div>
+  <div style="display:flex; align-items:center; gap:10px;">
+    <span style="color:white; font-weight:bold;">W</span>
+    <div class="digitalClock" id="clock2">00:00:00</div>
+    <span style="color:rgb(255, 255, 255); font-weight:bold;">W</span> <!-- NEW text on the right -->
+  </div>
+</div>
+
+<button id="pauseBtn">Pause</button>
+
+  </div>
+</div>
+
+
+
+<script>
+const bgColorBtn = document.getElementById("bgColorBtn");
+const bgColorPicker = document.getElementById("bgColorPicker");
+
+// Open the color picker when button is clicked
+bgColorBtn.addEventListener("click", () => {
+  bgColorPicker.click(); // triggers the hidden color input
+});
+
+// Change background color when a color is picked
+bgColorPicker.addEventListener("input", (e) => {
+  document.body.style.backgroundColor = e.target.value;
+});
+</script>
+<script>
+  // --- Chess Clocks ---
+const clock1 = document.getElementById('clock1'); // Black
+const clock2 = document.getElementById('clock2'); // White
+
+let whiteTime = 10 * 60; // 10 minutes in seconds
+let blackTime = 10 * 60;
+let timerInterval = null;
+
+function updateClockDisplay() {
+  const wMin = String(Math.floor(whiteTime / 60)).padStart(2,'0');
+  const wSec = String(whiteTime % 60).padStart(2,'0');
+  const bMin = String(Math.floor(blackTime / 60)).padStart(2,'0');
+  const bSec = String(blackTime % 60).padStart(2,'0');
+
+  clock2.textContent = `${wMin}:${wSec}`;
+  clock1.textContent = `${bMin}:${bSec}`;
+}
+
+function startClock() {
+  if(timerInterval) clearInterval(timerInterval);
+  timerInterval = setInterval(() => {
+    if(turn === 'w') {
+      whiteTime--;
+      if(whiteTime <= 0) { whiteTime = 0; clearInterval(timerInterval); alert("White's time over!"); }
+    } else {
+      blackTime--;
+      if(blackTime <= 0) { blackTime = 0; clearInterval(timerInterval); alert("Black's time over!"); }
+    }
+    updateClockDisplay();
+  }, 1000);
+}
+
+// Initialize display
+updateClockDisplay();
+
+const changeTimerBtn = document.getElementById('changeTimerBtn');
+const timerPopup = document.getElementById('timerPopup');
+const timerOptions = document.querySelectorAll('.timerOption');
+
+// Open/close popup
+changeTimerBtn.addEventListener('click', (e) => {
+  const rect = changeTimerBtn.getBoundingClientRect();
+  timerPopup.style.top = rect.bottom + "px";
+  timerPopup.style.left = rect.left + "px";
+  timerPopup.style.display = timerPopup.style.display === "block" ? "none" : "block";
+});
+
+timerBtn.addEventListener('click', () => {
+  // Reset clocks to currently selected timer or default 10 min
+  const activeBtn = document.querySelector('.timerOption.active');
+  const time = activeBtn ? parseInt(activeBtn.dataset.time) : 600; // 600s = 10min
+  whiteTime = blackTime = time;
+  updateClockDisplay();
+
+  // --- Reset board to starting position ---
+  board = JSON.parse(JSON.stringify(initialBoard));
+  moveHistory = [];
+  turn = 'w';
+  castlingRights = { wK:true, wQ:true, bK:true, bQ:true };
+  selected = null;
+  possibleMoves = [];
+  flipped = false;
+  updateBoardTransform();
+  drawBoard();
+
+  // Start the clock
+  startClock();
+});
+
+// Choose new timer
+timerOptions.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const newTime = parseInt(btn.dataset.time);
+    whiteTime = blackTime = newTime;
+    updateClockDisplay();
+    timerPopup.style.display = 'none';
+
+    // Remove active class from all buttons
+    timerOptions.forEach(b => b.classList.remove('active'));
+    // Add active class to clicked button
+    btn.classList.add('active');
+  });
+});
+
+
+// Close popup if clicking outside
+document.addEventListener('click', (e) => {
+  if (!timerPopup.contains(e.target) && e.target !== changeTimerBtn) {
+    timerPopup.style.display = 'none';
+  }
+});
+
+const pauseBtn = document.getElementById('pauseBtn');
+let isPaused = false;
+
+pauseBtn.addEventListener('click', () => {
+  if(isPaused){
+    // Unpause
+    startClock(); // restart interval
+    pauseBtn.textContent = "Pause";
+    isPaused = false;
+  } else {
+    // Pause
+    if(timerInterval) clearInterval(timerInterval);
+    pauseBtn.textContent = "Resume";
+    isPaused = true;
+  }
+});
+
+const tweaksText = document.getElementById('tweaksText');
+const tweaksPopup = document.getElementById('tweaksPopup');
+const closeTweaksBtn = document.getElementById('closeTweaksBtn');
+
+tweaksText.addEventListener('click', () => {
+    tweaksPopup.style.display = 'block';
+});
+
+closeTweaksBtn.addEventListener('click', () => {
+    tweaksPopup.style.display = 'none';
+});
+
+// Optional: click outside popup to close
+window.addEventListener('click', (e) => {
+    if(e.target === tweaksPopup){
+        tweaksPopup.style.display = 'none';
+    }
+});
+
+const checkmatePopup = document.getElementById('checkmatePopup');
+const checkmateText = document.getElementById('checkmateText');
+const closeCheckmateBtn = document.getElementById('closeCheckmateBtn');
+
+closeCheckmateBtn.addEventListener('click', () => {
+    checkmatePopup.style.display = 'none';
+});
+
+
+
+</script>
+
+<div id="checkmatePopup" style="
+    display:none;
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: #e63946;
+    color: white;
+    padding: 25px 35px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.7);
+    z-index: 50;
+    text-align:center;
+    font-size: 24px;
+    font-weight: bold;
+">
+  <div id="checkmateText">Checkmate!</div>
+  <button id="closeCheckmateBtn" style="
+      margin-top: 15px;
+      padding: 5px 10px;
+      background-color:#a02836;
+      color:white;
+      border:none;
+      border-radius:6px;
+      cursor:pointer;
+  ">Close</button>
+</div>
+
+
+</body>
+</html>
